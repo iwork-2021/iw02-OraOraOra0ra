@@ -17,6 +17,7 @@ protocol EditItemDelegate {
 
 class ItemViewController: UIViewController {
 
+    @IBOutlet weak var text: UITextView!
     @IBOutlet weak var doneButton: UIButton!
     @IBOutlet weak var titleInput: UITextField!
     @IBOutlet weak var isChecked: UISwitch!
@@ -28,7 +29,6 @@ class ItemViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
         // Do any additional setup after loading the view.
         doneButton.isEnabled = false
         if itemToEdit != nil {

@@ -14,6 +14,8 @@ class TodoTableViewController: UITableViewController {
         TodoItem(title:"java work",isChecked:true)
     ]
     
+    var data = Array(0..<10)
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -23,6 +25,9 @@ class TodoTableViewController: UITableViewController {
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem
         self.navigationController?.navigationBar.prefersLargeTitles = true
+        let image1 = UIImage(named: "01.jpeg")
+        self.tableView.backgroundColor = UIColor(patternImage: image1!)
+        loadItems()
     }
 
     // MARK: - Table view data source
@@ -53,9 +58,65 @@ class TodoTableViewController: UITableViewController {
         return cell
     }
     
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+    /*override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         items.remove(at:indexPath.row)
         self.tableView.deleteRows(at: [indexPath], with: .automatic)
+    }*/
+    
+    func handleDelete(indexPath: IndexPath) {
+        items.remove(at:indexPath.row)
+        self.tableView.deleteRows(at: [indexPath], with: .automatic)
+    }
+    
+    func handleArchive(indexPath: IndexPath) {
+        let item = items[indexPath.row]
+        item.isChecked = true
+        editItem(newItem: item, itemIndex: indexPath.row)
+    }
+    
+    func handleTopping(indexPath: IndexPath) {
+        let item = items[indexPath.row]
+        items.remove(at: indexPath.row)
+        items.insert(item,at: 0)
+        let cell = tableView.dequeueReusableCell(withIdentifier: "todoCell", for: indexPath) as! TodoTableViewCell
+        cell.backgroundColor = .systemGray
+        tableView.reloadData()
+    }
+    
+    override func tableView(_ tableView: UITableView,leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let action = UIContextualAction(style: .normal,title: "Delete") { [weak self] (action, view, completionHandler) in
+        self?.handleDelete(indexPath: indexPath)
+        completionHandler(true)}
+        action.backgroundColor = .systemRed
+        return UISwipeActionsConfiguration(actions: [action])
+    }
+    
+    override func tableView(_ tableView: UITableView,
+                       trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let archive = UIContextualAction(style: .normal,
+                                         title: "Archive") { [weak self] (action, view, completionHandler) in
+                                            self?.handleArchive(indexPath: indexPath)
+                                            completionHandler(true)
+        }
+        archive.backgroundColor = .systemGreen
+
+        let trash = UIContextualAction(style: .destructive,
+                                       title: "Delete") { [weak self] (action, view, completionHandler) in
+                                        self?.handleDelete(indexPath: indexPath)
+                                        completionHandler(true)
+        }
+        trash.backgroundColor = .systemRed
+
+        let topping = UIContextualAction(style: .normal,
+                                       title: "Topping") { [weak self] (action, view, completionHandler) in
+                                        self?.handleTopping(indexPath: indexPath)
+                                        completionHandler(true)
+        }
+        topping.backgroundColor = .systemOrange
+
+        let configuration = UISwipeActionsConfiguration(actions: [trash, archive, topping])
+
+        return configuration
     }
     
 
@@ -76,8 +137,8 @@ class TodoTableViewController: UITableViewController {
         } else if editingStyle == .insert {
             // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
         }    
-    }
-    */
+    }*/
+    
 
     /*
     // Override to support rearranging the table view.
@@ -133,5 +194,32 @@ extension TodoTableViewController: EditItemDelegate {
     func editItem(newItem: TodoItem, itemIndex: Int) {
         self.items[itemIndex] = newItem
         self.tableView.reloadData()
+    }
+}
+
+extension TodoTableViewController {
+    func dataFilePath()->URL {
+        let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        return path!.appendingPathComponent("TodoItems.json")
+    }
+    
+    func saveAllItems() {
+        do {
+            let data = try JSONEncoder().encode(items)
+            try data.write(to: dataFilePath(),options: .atomic)
+        } catch {
+            print("Can not save: \(error.localizedDescription)")
+        }
+    }
+    
+    func loadItems() {
+        let path = dataFilePath()
+        if let data = try? Data(contentsOf: path) {
+            do {
+                items = try JSONDecoder().decode([TodoItem].self, from: data)
+            } catch {
+                print("Error decoding list: \(error.localizedDescription)")
+            }
+        }
     }
 }
